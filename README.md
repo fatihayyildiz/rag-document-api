@@ -10,6 +10,7 @@ A **Retrieval-Augmented Generation (RAG)** API built with NestJS that enables do
 - 💾 **Vector Storage** – Store and query embeddings using ChromaDB
 - 🤖 **RAG Query** – Ask questions and get answers based on your documents
 - 🐘 **PostgreSQL** – Document metadata persistence with TypeORM
+- 🔐 **JWT Authentication** – Secure API endpoints with JWT-based authentication
 
 ## Tech Stack
 
@@ -90,6 +91,10 @@ OPENAI_API_KEY=sk-your-api-key-here
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_CHAT_MODEL=gpt-4o-mini
 
+# JWT Authentication
+JWT_SECRET=your_super_secret_jwt_key_change_me_in_production
+JWT_EXPIRES_IN=7d
+
 # RAG Settings
 RAG_TOP_K=5
 RAG_MAX_CONTEXT_CHARS=12000
@@ -120,32 +125,93 @@ The API will be available at `http://localhost:3000`.
 
 ## API Endpoints
 
+### Authentication
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/auth/register` | Register a new user | No |
+| `POST` | `/auth/login` | Login and get JWT token | No |
+| `GET` | `/auth/me` | Get current user profile | Yes |
+
+### Health Check
+
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `GET` | `/` | Hello endpoint | No |
+| `GET` | `/health` | Health check endpoint | No |
+
 ### Documents
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/documents/upload` | Upload a document (multipart/form-data with `file` field) |
-| `GET` | `/documents/:id` | Get document metadata by ID |
-| `GET` | `/documents/:id/download` | Download the original file |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/documents/upload` | Upload a document (multipart/form-data with `file` field) | Yes |
+| `GET` | `/documents/:id` | Get document metadata by ID | Yes |
+| `GET` | `/documents/:id/download` | Download the original file | Yes |
 
 ### Ingestion
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/documents/:id/ingest` | Process document: extract text, chunk, embed, and store in vector DB |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/documents/:id/ingest` | Process document: extract text, chunk, embed, and store in vector DB | Yes |
 
 ### RAG Query
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/rag/query` | Ask a question against your knowledge base |
+| Method | Endpoint | Description | Auth Required |
+|--------|----------|-------------|---------------|
+| `POST` | `/rag/query` | Ask a question against your knowledge base | Yes |
 
 ## Usage Examples
 
-### Upload a Document
+### Register a New User
+
+```bash
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your_secure_password"
+  }'
+```
+
+**Response:**
+```json
+{
+  "message": "User registered successfully",
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "a1b2c3d4-...",
+    "email": "user@example.com"
+  }
+}
+```
+
+### Login
+
+```bash
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "your_secure_password"
+  }'
+```
+
+**Response:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": "a1b2c3d4-...",
+    "email": "user@example.com"
+  }
+}
+```
+
+### Upload a Document (with Authentication)
 
 ```bash
 curl -X POST http://localhost:3000/documents/upload \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -F "file=@/path/to/document.pdf"
 ```
 
@@ -166,7 +232,8 @@ curl -X POST http://localhost:3000/documents/upload \
 ### Ingest a Document
 
 ```bash
-curl -X POST http://localhost:3000/documents/b61d7d5b-1485-4ea0-9c3d-442a9ca5d69d/ingest
+curl -X POST http://localhost:3000/documents/b61d7d5b-1485-4ea0-9c3d-442a9ca5d69d/ingest \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 **Response:**
@@ -184,6 +251,7 @@ curl -X POST http://localhost:3000/documents/b61d7d5b-1485-4ea0-9c3d-442a9ca5d69
 ```bash
 curl -X POST http://localhost:3000/rag/query \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "query": "What is the main topic of the document?",
     "topK": 5
@@ -211,6 +279,7 @@ curl -X POST http://localhost:3000/rag/query \
 ```bash
 curl -X POST http://localhost:3000/rag/query \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "query": "Summarize the key points",
     "docId": "b61d7d5b-1485-4ea0-9c3d-442a9ca5d69d"
@@ -241,12 +310,29 @@ src/
 ├── llm/                    # OpenAI chat completion
 │   ├── llm.service.ts
 │   └── llm.module.ts
-└── rag/                    # RAG query orchestration
+├── rag/                    # RAG query orchestration
     ├── rag.controller.ts
     ├── rag.service.ts
     ├── rag.module.ts
     └── dto/
         └── rag-query.dto.ts
+└── auth/                   # JWT authentication
+    ├── auth.controller.ts
+    ├── auth.service.ts
+    ├── auth.module.ts
+    ├── users.service.ts
+    ├── entities/
+    │   └── user.entity.ts
+    ├── dto/
+    │   ├── login.dto.ts
+    │   └── register.dto.ts
+    ├── guards/
+    │   └── jwt-auth.guard.ts
+    ├── strategies/
+    │   └── jwt.strategy.ts
+    └── decorators/
+        ├── public.decorator.ts
+        └── current-user.decorator.ts
 ```
 
 ## Development

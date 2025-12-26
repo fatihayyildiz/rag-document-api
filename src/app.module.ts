@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,6 +11,7 @@ import { VectorStoreModule } from '@/vector-store/vector-store.module';
 import { IngestionController } from '@/ingestion/ingestion.controller';
 import { LlmModule } from '@/llm/llm.module';
 import { RagModule } from '@/rag/rag.module';
+import { AuthModule, JwtAuthGuard } from '@/auth';
 
 @Module({
   imports: [
@@ -35,9 +37,16 @@ import { RagModule } from '@/rag/rag.module';
     EmbeddingsModule,
     VectorStoreModule,
     LlmModule,
-    RagModule
+    RagModule,
+    AuthModule,
   ],
   controllers: [AppController, IngestionController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
