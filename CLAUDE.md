@@ -42,6 +42,13 @@ pnpm run test:e2e
 # Lint and format
 pnpm run lint
 pnpm run format
+
+# Database migrations
+pnpm run migration:run      # Run pending migrations
+pnpm run migration:revert   # Revert last migration
+pnpm run migration:show     # Show migration status
+pnpm run migration:generate src/database/migrations/MigrationName  # Generate migration from entity changes
+pnpm run migration:create src/database/migrations/MigrationName    # Create empty migration
 ```
 
 ## Architecture & Key Modules
@@ -113,7 +120,10 @@ POSTGRES_PORT=5432
 POSTGRES_DB=rag
 POSTGRES_USER=rag
 POSTGRES_PASSWORD=rag_password_change_me
-DB_SYNCHRONIZE=true
+
+# Database Migrations
+DB_MIGRATIONS_RUN=true
+DB_LOGGING=true
 
 # ChromaDB
 CHROMA_HOST=localhost
@@ -163,6 +173,39 @@ curl http://localhost:3000/documents/some-id \
 | `src/auth/decorators/current-user.decorator.ts` | `@CurrentUser()` to get user in controllers |
 | `src/auth/guards/jwt-auth.guard.ts` | Global guard checking JWT tokens |
 | `src/auth/entities/user.entity.ts` | User entity (id, email, password, isActive) |
+
+## Database Migrations
+
+The app uses TypeORM migrations instead of `synchronize: true` for production safety.
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/database/data-source.ts` | TypeORM DataSource config for CLI |
+| `src/database/migrations/*.ts` | Migration files |
+
+### Migration Workflow
+
+1. **Modify entity** (e.g., add column to `User`)
+2. **Generate migration**: `pnpm run migration:generate src/database/migrations/AddColumnToUser`
+3. **Review** the generated migration file
+4. **Run migration**: `pnpm run migration:run`
+
+### Auto-run on Startup
+
+Migrations run automatically on app startup when `DB_MIGRATIONS_RUN=true` (default).
+Set to `false` if you prefer running migrations manually before deployment.
+
+### Manual Migration (CI/CD)
+
+```bash
+# Build first (migrations need compiled JS)
+pnpm run build
+
+# Run migrations
+pnpm run migration:run
+```
 
 ## API Endpoints
 

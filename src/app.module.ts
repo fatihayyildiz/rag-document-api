@@ -12,6 +12,7 @@ import { IngestionController } from '@/ingestion/ingestion.controller';
 import { LlmModule } from '@/llm/llm.module';
 import { RagModule } from '@/rag/rag.module';
 import { AuthModule, JwtAuthGuard } from '@/auth';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -28,7 +29,10 @@ import { AuthModule, JwtAuthGuard } from '@/auth';
         password: configService.get<string>('POSTGRES_PASSWORD', 'rag_password_change_me'),
         database: configService.get<string>('POSTGRES_DB', 'rag'),
         autoLoadEntities: true,
-        synchronize: configService.get<string>('DB_SYNCHRONIZE', 'false') === 'true',
+        synchronize: false, // Always false - use migrations instead
+        migrationsRun: configService.get<string>('DB_MIGRATIONS_RUN', 'true') === 'true',
+        migrations: [join(__dirname, 'database', 'migrations', '*.{ts,js}')],
+        migrationsTableName: 'migrations',
         logging: configService.get<string>('DB_LOGGING', 'true') === 'true',
       }),
     }),

@@ -16,6 +16,8 @@ import { sanitizeFilename } from 'utils/files';
 import { lookup as lookupMime } from 'mime-types';
 import { createReadStream } from 'fs';
 import type { Response } from 'express';
+import { CurrentUser } from '@/auth/decorators/current-user.decorator';
+import { User } from '@/auth/entities/user.entity';
 
 @Controller('documents')
 export class DocumentsController {
@@ -39,11 +41,14 @@ export class DocumentsController {
       },
     }),
   )
-  uploadDocument(@UploadedFile() file: Express.Multer.File) {
+  uploadDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: User,
+  ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    return this.documentService.saveToLocale(file);
+    return this.documentService.saveToLocale(file, user.id);
   }
 
   @Get(':id')

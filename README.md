@@ -11,6 +11,7 @@ A **Retrieval-Augmented Generation (RAG)** API built with NestJS that enables do
 - 🤖 **RAG Query** – Ask questions and get answers based on your documents
 - 🐘 **PostgreSQL** – Document metadata persistence with TypeORM
 - 🔐 **JWT Authentication** – Secure API endpoints with JWT-based authentication
+- 🔄 **Database Migrations** – Production-ready TypeORM migrations
 
 ## Tech Stack
 
@@ -78,7 +79,7 @@ POSTGRES_USER=rag
 POSTGRES_PASSWORD=rag_password_change_me
 
 # Database Options
-DB_SYNCHRONIZE=true
+DB_MIGRATIONS_RUN=true
 DB_LOGGING=true
 
 # ChromaDB
@@ -333,6 +334,9 @@ src/
     └── decorators/
         ├── public.decorator.ts
         └── current-user.decorator.ts
+└── database/               # Database migrations
+    ├── data-source.ts      # TypeORM CLI config
+    └── migrations/         # Migration files
 ```
 
 ## Development
@@ -348,6 +352,39 @@ pnpm run format       # Format code with Prettier
 pnpm run test         # Run unit tests
 pnpm run test:e2e     # Run end-to-end tests
 pnpm run test:cov     # Run tests with coverage
+
+# Database Migrations
+pnpm run migration:run      # Run pending migrations
+pnpm run migration:revert   # Revert last migration
+pnpm run migration:show     # Show migration status
+pnpm run migration:generate src/database/migrations/Name  # Auto-generate from entity changes
+pnpm run migration:create src/database/migrations/Name    # Create empty migration
+```
+
+### Database Migrations
+
+The application uses TypeORM migrations for database schema management. **Migrations run automatically on startup** when `DB_MIGRATIONS_RUN=true` (default).
+
+#### Creating a New Migration
+
+1. Modify your entity (e.g., add a new column)
+2. Generate migration: `pnpm run migration:generate src/database/migrations/AddNewColumn`
+3. Review the generated file in `src/database/migrations/`
+4. Commit the migration file
+
+#### Production Deployment
+
+Migrations run automatically on app startup. For manual control:
+
+```bash
+# Build first (required for migrations)
+pnpm run build
+
+# Run migrations manually
+pnpm run migration:run
+
+# Then start the app with migrations disabled
+DB_MIGRATIONS_RUN=false pnpm run start:prod
 ```
 
 ### Supported File Types
