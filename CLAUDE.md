@@ -50,6 +50,7 @@ pnpm run format
 
 ```
 AppModule
+├── AuthModule         → JWT authentication, user management
 ├── DocumentsModule    → Upload, metadata, file storage
 ├── IngestionModule    → Text extraction, chunking, embedding pipeline
 ├── EmbeddingsModule   → OpenAI embeddings generation
@@ -62,6 +63,10 @@ AppModule
 
 | File | Purpose |
 |------|---------|
+| `src/auth/auth.service.ts` | User registration, login, JWT token generation |
+| `src/auth/users.service.ts` | User CRUD operations |
+| `src/auth/strategies/jwt.strategy.ts` | Passport JWT strategy |
+| `src/auth/guards/jwt-auth.guard.ts` | Global JWT authentication guard |
 | `src/documents/documents.service.ts` | Document CRUD, file path resolution |
 | `src/ingestion/ingestion.service.ts` | PDF/text extraction, chunking, embedding pipeline |
 | `src/embeddings/embeddings.service.ts` | OpenAI embeddings via `text-embedding-3-small` |
@@ -71,9 +76,10 @@ AppModule
 
 ### Data Flow
 
-1. **Upload**: `POST /documents/upload` → file saved to `storage/uploads/`, metadata to PostgreSQL
-2. **Ingest**: `POST /documents/:id/ingest` → extract text → chunk → embed → store in ChromaDB
-3. **Query**: `POST /rag/query` → embed question → retrieve similar chunks → LLM generates answer
+1. **Register/Login**: `POST /auth/register` or `POST /auth/login` → receive JWT token
+2. **Upload**: `POST /documents/upload` (with Bearer token) → file saved to `storage/uploads/`, metadata to PostgreSQL
+3. **Ingest**: `POST /documents/:id/ingest` (with Bearer token) → extract text → chunk → embed → store in ChromaDB
+4. **Query**: `POST /rag/query` (with Bearer token) → embed question → retrieve similar chunks → LLM generates answer
 
 ## Important Implementation Details
 
@@ -119,12 +125,56 @@ OPENAI_API_KEY=sk-xxx
 OPENAI_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_CHAT_MODEL=gpt-4o-mini
 
+# JWT Authentication
+JWT_SECRET=your_super_secret_jwt_key_change_me_in_production
+JWT_EXPIRES_IN=7d
+
 # RAG
 RAG_TOP_K=5
 RAG_MAX_CONTEXT_CHARS=12000
 ```
 
+## Authentication
+
+The API uses JWT-based authentication. All endpoints are protected by default except:
+- `GET /` - Hello endpoint
+- `GET /health` - Health check
+- `POST /auth/register` - User registration
+- `POST /auth/login` - User login
+
+### Making Authenticated Requests
+
+```bash
+# Get token via login
+TOKEN=$(curl -s -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"password"}' | jq -r '.accessToken')
+
+# Use token in requests
+curl http://localhost:3000/documents/some-id \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Key Auth Components
+
+| File | Purpose |
+|------|---------|
+| `src/auth/decorators/public.decorator.ts` | `@Public()` decorator to skip auth |
+| `src/auth/decorators/current-user.decorator.ts` | `@CurrentUser()` to get user in controllers |
+| `src/auth/guards/jwt-auth.guard.ts` | Global guard checking JWT tokens |
+| `src/auth/entities/user.entity.ts` | User entity (id, email, password, isActive) |
+
 ## API Endpoints
+
+### Authentication (Public)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/auth/register` | Register new user |
+| `POST` | `/auth/login` | Login, get JWT token |
+| `GET` | `/auth/me` | Get current user (auth required) |
+
+### Documents (Auth Required)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -132,6 +182,11 @@ RAG_MAX_CONTEXT_CHARS=12000
 | `GET` | `/documents/:id` | Get document metadata |
 | `GET` | `/documents/:id/download` | Download original file |
 | `POST` | `/documents/:id/ingest` | Process & embed document |
+
+### RAG (Auth Required)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
 | `POST` | `/rag/query` | Query knowledge base |
 
 ### RAG Query Body
