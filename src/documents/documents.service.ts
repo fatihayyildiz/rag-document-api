@@ -80,4 +80,22 @@ export class DocumentsService {
     const result = await this.documentRepository.update({ id: docId }, { status });
     if (!result.affected) throw new NotFoundException(`Document not found: ${docId}`);
   }
+
+  async findAllByUserId(userId: string): Promise<UploadedDocument[]> {
+    const docs = await this.documentRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
+
+    return docs.map((doc) => ({
+      docId: doc.id,
+      originalName: doc.originalName,
+      storedName: doc.storedName,
+      mimeType: doc.mimeType,
+      size: Number(doc.size),
+      storagePath: doc.storagePath,
+      status: doc.status,
+      createdAt: doc.createdAt.toISOString(),
+    }));
+  }
 }

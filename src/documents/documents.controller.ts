@@ -23,6 +23,11 @@ import { User } from '@/auth/entities/user.entity';
 export class DocumentsController {
   constructor(private readonly documentService: DocumentsService) {}
 
+  @Get()
+  listDocuments(@CurrentUser('id') userId: string) {
+    return this.documentService.findAllByUserId(userId);
+  }
+
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -37,7 +42,7 @@ export class DocumentsController {
         },
       }),
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10 MB
+        fileSize: 10 * 1024 * 1024 * 5, // 50 MB
       },
     }),
   )

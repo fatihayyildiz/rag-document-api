@@ -19,14 +19,14 @@ services:
       timeout: 3s
       retries: 20
 
-  chroma:
-    image: chromadb/chroma:latest
-    container_name: rag_chroma
-    restart: unless-stopped
-    ports:
-      - "${CHROMA_PORT}:8000"
-    volumes:
-      - rag_chroma_data:/chroma/chroma
+  # chroma:
+  #   image: chromadb/chroma:latest
+  #   container_name: rag_chroma
+  #   restart: unless-stopped
+  #   ports:
+  #     - "${CHROMA_PORT}:8000"
+  #   volumes:
+  #     - rag_chroma_data:/chroma/chroma
 
 volumes:
   rag_pg_data:
