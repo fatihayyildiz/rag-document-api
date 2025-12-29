@@ -11,7 +11,9 @@ services:
     volumes:
       - ./storage:/app/storage
     restart: unless-stopped
-
+    networks:
+      - coolify
+      - default
 
   chroma:
     image: chromadb/chroma:latest
@@ -19,6 +21,14 @@ services:
     restart: unless-stopped
     volumes:
       - rag_chroma_data:/chroma/chroma
+    networks:
+      - default
+
+networks:
+  coolify:
+    external: true
+  default:
+    driver: bridge
 
 volumes:
   rag_chroma_data:
