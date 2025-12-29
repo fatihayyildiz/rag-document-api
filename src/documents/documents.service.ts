@@ -13,7 +13,7 @@ export class DocumentsService {
     private readonly documentRepository: Repository<DocumentEntity>,
   ) {}
 
-  async saveToLocale(file: Express.Multer.File, userId?: string): Promise<UploadedDocument> {
+  async saveToLocale(file: Express.Multer.File, userId: string): Promise<UploadedDocument> {
     const entity = this.documentRepository.create({
       originalName: file.originalname,
       storedName: file.filename,

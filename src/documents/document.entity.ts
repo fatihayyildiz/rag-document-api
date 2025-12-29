@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, ManyToOne, PrimaryGeneratedColumn, JoinColumn } from 'typeorm';
+import { User } from '@/auth/entities/user.entity';
 
 @Entity({ name: 'documents' })
 export class DocumentEntity {
@@ -6,8 +7,12 @@ export class DocumentEntity {
   id: string;
 
   @Index()
-  @Column({ nullable: true })
+  @Column()
   userId: string;
+
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'userId' })
+  user: User;
 
   @Column()
   originalName: string;
