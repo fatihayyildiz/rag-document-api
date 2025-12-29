@@ -18,9 +18,9 @@ WORKDIR /app
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml tsconfig.json ./
 
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --frozen-lockfile
 
 COPY --from=builder /app/dist ./dist
 
@@ -28,4 +28,4 @@ RUN mkdir -p /app/storage/uploads
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+CMD ["node", "-r", "tsconfig-paths/register", "dist/src/main.js"]
