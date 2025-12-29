@@ -10,8 +10,8 @@ export const dataSourceOptions: DataSourceOptions = {
   username: process.env.POSTGRES_USER || 'rag',
   password: process.env.POSTGRES_PASSWORD || 'rag_password_change_me',
   database: process.env.POSTGRES_DB || 'rag',
-  entities: ['dist/**/*.entity.js'],
-  migrations: ['dist/database/migrations/*.js'],
+  entities: ['dist/src/**/*.entity.js'],
+  migrations: ['dist/src/database/migrations/*.js'],
   migrationsTableName: 'migrations',
   logging: process.env.DB_LOGGING === 'true',
 };
