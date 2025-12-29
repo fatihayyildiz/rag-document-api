@@ -11,3 +11,16 @@ services:
     volumes:
       - ./storage:/app/storage
     restart: unless-stopped
+
+
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: rag_chroma
+    restart: unless-stopped
+    # ports:
+    #   - "${CHROMA_PORT}:8000"
+    volumes:
+      - rag_chroma_data:/chroma/chroma
+
+volumes:
+  rag_chroma_data:
