@@ -43,11 +43,15 @@ export class RagService {
       where
     });
 
+    console.log('RAG Retrieved IDs:', retrieved);
+
     const { context, sources } = buildContext(
       retrieved.documents,
       retrieved.metadatas,
       maxChars
     );
+
+    console.log('RAG Context:', context);
 
     const answer = await this.llm.answerWithContext({
       question: input.query,
@@ -61,7 +65,8 @@ export class RagService {
         topK,
         embeddingModel: this.embeddings.getModel(),
         chatModel: this.llm.getModel(),
-        matched: retrieved.ids.length
+        matched: retrieved.ids.length,
+        docs: retrieved.documents
       }
     };
   }

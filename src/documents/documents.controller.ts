@@ -16,10 +16,16 @@ import { sanitizeFilename } from 'utils/files';
 import { lookup as lookupMime } from 'mime-types';
 import { createReadStream } from 'fs';
 import type { Response } from 'express';
+import { CurrentUser } from '@/auth/decorators/current-user.decorator';
 
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentService: DocumentsService) {}
+
+  @Get()
+  listDocuments(@CurrentUser('id') userId: string) {
+    return this.documentService.findAllByUserId(userId);
+  }
 
   @Post('upload')
   @UseInterceptors(
@@ -35,15 +41,18 @@ export class DocumentsController {
         },
       }),
       limits: {
-        fileSize: 10 * 1024 * 1024, // 10 MB
+        fileSize: 10 * 1024 * 1024 * 5, // 50 MB
       },
     }),
   )
-  uploadDocument(@UploadedFile() file: Express.Multer.File) {
+  uploadDocument(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser('id') userId: string,
+  ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    return this.documentService.saveToLocale(file);
+    return this.documentService.saveToLocale(file, userId);
   }
 
   @Get(':id')

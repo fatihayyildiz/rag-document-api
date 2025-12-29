@@ -5,6 +5,10 @@ export class DocumentEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Index()
+  @Column({ nullable: true })
+  userId: string;
+
   @Column()
   originalName: string;
 
